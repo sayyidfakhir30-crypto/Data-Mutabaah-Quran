@@ -136,7 +136,7 @@
                 <!-- TOMBOL KIRIM KE WA SETELAH INPUT -->
                 <div id="wa-section" class="hidden mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
                     <h3 class="font-bold text-emerald-800 text-sm mb-2">Rapor Berhasil Disimpan!</h3>
-                    <p class="text-xs text-emerald-700 mb-3">Klik tombol di bawah untuk langsung membagikan rekap laporan ini ke Grup WhatsApp:</p>
+                    <p class="text-xs text-emerald-700 mb-3">Klik tombol di bawah untuk langsung membagikan rekap laporan ini ke WhatsApp:</p>
                     <a id="btn-wa" href="#" target="_blank" class="block text-center bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-4 rounded-xl transition text-sm">
                         Kirim ke WhatsApp 📱
                     </a>
@@ -342,7 +342,7 @@
             } else {
                 showNotif('Rapor mutabaah berhasil disimpan ke sistem!');
                 
-                const teksWA = `*📊 LAPORAN MUTABAAH QURAN*\n\n📅 Tanggal: ${tgl}\n👤 Nama Peserta: ${namaMurid}\n👨‍🏫 Pengajar: ${namaPengajar}\n📖 Materi: ${materi}\n📝 Catatan: ${catatan}\n📌 Status: *${status}*\n\n_Alhamdulillah, jazakumullahu khairan._`;
+                const teksWA = `*📊 LAPORAN MUTABAAH QURAN*\n\n📅 Tanggal: ${tgl}\n👤 Nama Peserta: ${namaMurid}\n👨‍🏫 Pengajar: ${namaPengajar}\n📖 Materi: ${materi}\n📝 Evaluasi: ${catatan}\n📌 Status: *${status}*\n\n_Alhamdulillah, jazakumullahu khairan._`;
                 
                 document.getElementById('btn-wa').href = `https://api.whatsapp.com/send?text=${encodeURIComponent(teksWA)}`;
                 document.getElementById('wa-section').classList.remove('hidden');
@@ -354,7 +354,7 @@
         async function loadKelasDropdownRekap() {
             const { data } = await supabaseClient.from('kelas').select('*');
             let opt = '<option value="">Pilih Kelas...</option>';
-            data?.forEach(k => { opt += `<option value="${k.id}">${k.nama_kelas} (${k.nama_program})</option>`; });
+            data?.forEach(k => { opt += `<option value="${k.id}" data-nama="${k.nama_kelas}" data-program="${k.nama_program}">${k.nama_kelas} (${k.nama_program})</option>`; });
             document.getElementById('rekap-select-kelas').innerHTML = opt;
         }
 
@@ -395,7 +395,15 @@
         function generateRekapWA() {
             const tgl = document.getElementById('rekap-tanggal').value;
             const selectKelas = document.getElementById('rekap-select-kelas');
-            const namaKelas = selectKelas.options[selectKelas.selectedIndex].text;
+            
+            if(!selectKelas.value) {
+                alert('Silakan pilih kelas terlebih dahulu.');
+                return;
+            }
+
+            const selectedOption = selectKelas.options[selectKelas.selectedIndex];
+            const namaKelas = selectedOption.getAttribute('data-nama');
+            const namaProgram = selectedOption.getAttribute('data-program');
             
             const selects = document.querySelectorAll('.status-murid');
             if(selects.length === 0) {
@@ -410,7 +418,13 @@
                 daftarLaporan += `${i + 1}. ${nama} ${status}\n`;
             });
 
-            const pesanFinal = `*📋 REKAP HARIAN KELAS*\n📁 Kelas: ${namaKelas}\n📅 Tanggal: ${tgl}\n\n${daftarLaporan}\n*Keterangan Simbol:*\n✅ Hadir & Setor\n📖 Hadir, Belum Setor\n🤒 Sakit\n🧳 Izin\n❌ Alpha (Tanpa Keterangan)\n\n_Barakallahu fiikum._`;
+            // Pengecekan otomatis penutup untuk akhwat atau ikhwah
+            const isAkhwat = namaKelas.toLowerCase().includes('akhwat') || namaProgram.toLowerCase().includes('akhwat');
+            const penutupDoa = isAkhwat 
+                ? 'Tetap Istiqomah, semoga Allah mudahkan, barakallah fiikunna' 
+                : 'Tetap Istiqomah, semoga Allah mudahkan, barakallah fiikum';
+
+            const pesanFinal = `*📋 REKAP HARIAN KELAS*\n📁 Kelas: ${namaKelas}\n📚 Program: ${namaProgram}\n📅 Tanggal: ${tgl}\n\n${daftarLaporan}\n*Keterangan Simbol:*\n✅ Hadir & Setor\n📖 Hadir, Belum Setor\n🤒 Sakit\n🧳 Izin\n❌ Alpha (Tanpa Keterangan)\n\n_${pen_Doa = penutupDoa}._`;
 
             document.getElementById('text-rekap-wa').value = pesanFinal;
             document.getElementById('btn-kirim-rekap-wa').href = `https://api.whatsapp.com/send?text=${encodeURIComponent(pesanFinal)}`;
