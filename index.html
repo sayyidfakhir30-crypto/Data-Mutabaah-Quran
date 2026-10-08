@@ -269,7 +269,7 @@
         async function loadKelasDropdown() {
             const { data } = await supabaseClient.from('kelas').select('*');
             let opt = '<option value="">Pilih Kelas...</option>';
-            data?.forEach(k => { opt += `<option value="${k.id}">${k.nama_kelas} (${k.nama_program})</option>`; });
+            data?.forEach(k => { opt += `<option value="${k.id}" data-nama="${k.nama_kelas}" data-program="${k.nama_program}">${k.nama_kelas} (${k.nama_program})</option>`; });
             document.getElementById('select-kelas').innerHTML = opt;
         }
 
@@ -285,10 +285,10 @@
         });
 
         async function loadMurid() {
-            const { data } = await supabaseClient.from('murid').select('*, kelas(nama_kelas)').order('created_at', { ascending: false });
+            const { data } = await supabaseClient.from('murid').select('*, kelas(nama_kelas, nama_program)').order('created_at', { ascending: false });
             let html = '';
             data?.forEach(m => { 
-                html += `<div class="p-3 bg-gray-50 rounded-xl border flex justify-between items-center text-sm"><span><b>${m.nama_murid}</b> (Masuk: ${m.tanggal_masuk}) - Kelas: ${m.kelas?.nama_kelas || '-'}</span><button onclick="hapusMurid('${m.id}')" class="text-red-600 hover:text-red-800 font-medium px-2 py-1">Hapus</button></div>`; 
+                html += `<div class="p-3 bg-gray-50 rounded-xl border flex justify-between items-center text-sm"><span><b>${m.nama_murid}</b> (Masuk: ${m.tanggal_masuk}) - Kelas: ${m.kelas?.nama_kelas || '-'} (${m.kelas?.nama_program || '-'})</span><button onclick="hapusMurid('${m.id}')" class="text-red-600 hover:text-red-800 font-medium px-2 py-1">Hapus</button></div>`; 
             });
             document.getElementById('list-murid').innerHTML = html || 'Belum ada data murid.';
         }
@@ -303,9 +303,14 @@
 
         // --- MUTABAAH ---
         async function loadMuridDropdown() {
-            const { data } = await supabaseClient.from('murid').select('*');
+            // Ambil data murid beserta relasi kelasnya agar bisa mendeteksi nama kelas & program
+            const { data } = await supabaseClient.from('murid').select('*, kelas(nama_kelas, nama_program)');
             let opt = '<option value="">Pilih Murid...</option>';
-            data?.forEach(m => { opt += `<option value="${m.id}">${m.nama_murid}</option>`; });
+            data?.forEach(m => { 
+                const namaKls = m.kelas?.nama_kelas || '';
+                const namaProg = m.kelas?.nama_program || '';
+                opt += `<option value="${m.id}" data-namakelas="${namaKls}" data-namaprogram="${namaProg}">${m.nama_murid} (${namaKls} - ${namaProg})</option>`; 
+            });
             document.getElementById('select-murid').innerHTML = opt;
         }
 
@@ -321,7 +326,12 @@
             
             const muridSelect = document.getElementById('select-murid');
             const pengajarSelect = document.getElementById('select-pengajar');
-            const namaMurid = muridSelect.options[muridSelect.selectedIndex].text;
+            
+            const selectedMuridOption = muridSelect.options[muridSelect.selectedIndex];
+            const namaMurid = selectedMuridOption.text.split(' (')[0];
+            const namaKelasMurid = selectedMuridOption.getAttribute('data-namakelas') || '';
+            const namaProgramMurid = selectedMuridOption.getAttribute('data-namaprogram') || '';
+            
             const namaPengajar = pengajarSelect.options[pengajarSelect.selectedIndex].text;
             const tgl = document.getElementById('tgl_pertemuan').value;
             const materi = document.getElementById('materi').value;
@@ -342,7 +352,13 @@
             } else {
                 showNotif('Rapor mutabaah berhasil disimpan ke sistem!');
                 
-                const teksWA = `*📊 LAPORAN MUTABAAH QURAN*\n\n📅 Tanggal: ${tgl}\n👤 Nama Peserta: ${namaMurid}\n👨‍🏫 Pengajar: ${namaPengajar}\n📖 Materi: ${materi}\n📝 Evaluasi: ${catatan}\n📌 Status: *${status}*\n\n_Alhamdulillah, jazakumullahu khairan._`;
+                // Pengecekan otomatis penutup untuk akhwat atau ikhwah di Tab 4
+                const isAkhwat = namaKelasMurid.toLowerCase().includes('akhwat') || namaProgramMurid.toLowerCase().includes('akhwat');
+                const penutupDoa = isAkhwat 
+                    ? 'Tetap Istiqomah, semoga Allah mudahkan, barakallah fiikunna' 
+                    : 'Tetap Istiqomah, semoga Allah mudahkan, barakallah fiikum';
+
+                const teksWA = `*📊 LAPORAN MUTABAAH QURAN*\n\n📁 Kelas: ${namaKelasMurid}\n📚 Program: ${namaProgramMurid}\n📅 Tanggal: ${tgl}\n👤 Nama Peserta: ${namaMurid}\n👨‍🏫 Pengajar: ${namaPengajar}\n📖 Materi: ${materi}\n📝 Evaluasi: ${catatan}\n📌 Status: *${status}*\n\n_${penutupDoa}._`;
                 
                 document.getElementById('btn-wa').href = `https://api.whatsapp.com/send?text=${encodeURIComponent(teksWA)}`;
                 document.getElementById('wa-section').classList.remove('hidden');
@@ -418,13 +434,12 @@
                 daftarLaporan += `${i + 1}. ${nama} ${status}\n`;
             });
 
-            // Pengecekan otomatis penutup untuk akhwat atau ikhwah
             const isAkhwat = namaKelas.toLowerCase().includes('akhwat') || namaProgram.toLowerCase().includes('akhwat');
             const penutupDoa = isAkhwat 
                 ? 'Tetap Istiqomah, semoga Allah mudahkan, barakallah fiikunna' 
                 : 'Tetap Istiqomah, semoga Allah mudahkan, barakallah fiikum';
 
-            const pesanFinal = `*📋 REKAP HARIAN KELAS*\n📁 Kelas: ${namaKelas}\n📚 Program: ${namaProgram}\n📅 Tanggal: ${tgl}\n\n${daftarLaporan}\n*Keterangan Simbol:*\n✅ Hadir & Setor\n📖 Hadir, Belum Setor\n🤒 Sakit\n🧳 Izin\n❌ Alpha (Tanpa Keterangan)\n\n_${pen_Doa = penutupDoa}._`;
+            const pesanFinal = `*📋 REKAP HARIAN KELAS*\n📁 Kelas: ${namaKelas}\n📚 Program: ${namaProgram}\n📅 Tanggal: ${tgl}\n\n${daftarLaporan}\n*Keterangan Simbol:*\n✅ Hadir & Setor\n📖 Hadir, Belum Setor\n🤒 Sakit\n🧳 Izin\n❌ Alpha (Tanpa Keterangan)\n\n_${penutupDoa}._`;
 
             document.getElementById('text-rekap-wa').value = pesanFinal;
             document.getElementById('btn-kirim-rekap-wa').href = `https://api.whatsapp.com/send?text=${encodeURIComponent(pesanFinal)}`;
