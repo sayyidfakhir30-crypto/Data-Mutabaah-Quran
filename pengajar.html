@@ -9,12 +9,9 @@
 </head>
 <body class="bg-gray-50 font-sans">
     <div class="max-w-4xl mx-auto p-4 sm:p-6">
-        <header class="bg-emerald-700 text-white p-6 rounded-2xl shadow-md mb-6 flex justify-between items-center">
-            <div>
-                <h1 class="text-2xl font-bold">Portal Pengajar</h1>
-                <p class="text-emerald-100 text-sm mt-1">Input Rapor & Rekap Grup Harian</p>
-            </div>
-            <a href="index.html" class="bg-emerald-800 hover:bg-emerald-900 text-white text-xs px-3 py-2 rounded-xl transition">Kembali ke Admin</a>
+        <header class="bg-emerald-700 text-white p-6 rounded-2xl shadow-md mb-6">
+            <h1 class="text-2xl font-bold">Portal Pengajar</h1>
+            <p class="text-emerald-100 text-sm mt-1">Input Rapor & Rekap Grup Harian</p>
         </header>
 
         <!-- Menu Tab Pengajar -->
@@ -148,4 +145,141 @@
                 const namaProg = m.kelas?.nama_program || '';
                 opt += `<option value="${m.id}" data-namakelas="${namaKls}" data-namaprogram="${namaProg}">${m.nama_murid} (${namaKls} - ${namaProg})</option>`; 
             });
-            document.getElementById('select-murid').
+            document.getElementById('select-murid').innerHTML = opt;
+        }
+
+        async function loadPengajarDropdown() {
+            const { data } = await supabaseClient.from('pengajar').select('*');
+            let opt = '<option value="">Pilih Pengajar...</option>';
+            data?.forEach(p => { opt += `<option value="${p.id}">${p.nama_pengajar}</option>`; });
+            document.getElementById('select-pengajar').innerHTML = opt;
+        }
+
+        document.getElementById('form-mutabaah').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const muridSelect = document.getElementById('select-murid');
+            const pengajarSelect = document.getElementById('select-pengajar');
+            
+            const selectedMuridOption = muridSelect.options[muridSelect.selectedIndex];
+            const namaMurid = selectedMuridOption.text.split(' (')[0];
+            const namaKelasMurid = selectedMuridOption.getAttribute('data-namakelas') || '';
+            const namaProgramMurid = selectedMuridOption.getAttribute('data-namaprogram') || '';
+            
+            const namaPengajar = pengajarSelect.options[pengajarSelect.selectedIndex].text;
+            const tgl = document.getElementById('tgl_pertemuan').value;
+            const materi = document.getElementById('materi').value;
+            const catatan = document.getElementById('catatan').value;
+            const status = document.getElementById('status_akhir').value;
+
+            const { error } = await supabaseClient.from('mutabaah').insert([{
+                murid_id: muridSelect.value,
+                pengajar_id: pengajarSelect.value,
+                tanggal_pertemuan: tgl,
+                materi: materi,
+                catatan_evaluasi: catatan,
+                status_akhir: status
+            }]);
+
+            if(error) {
+                showNotif('Gagal: ' + error.message, false);
+            } else {
+                showNotif('Rapor mutabaah berhasil disimpan ke sistem!');
+                
+                const isAkhwat = namaKelasMurid.toLowerCase().includes('akhwat') || namaProgramMurid.toLowerCase().includes('akhwat');
+                const penutupDoa = isAkhwat 
+                    ? 'Tetap Istiqomah, semoga Allah mudahkan, barakallah fiikunna' 
+                    : 'Tetap Istiqomah, semoga Allah mudahkan, barakallah fiikum';
+
+                const teksWA = `*📊 LAPORAN MUTABAAH QURAN*\n\n📁 Kelas: ${namaKelasMurid}\n📚 Program: ${namaProgramMurid}\n📅 Tanggal: ${tgl}\n👤 Nama Peserta: ${namaMurid}\n👨‍🏫 Pengajar: ${namaPengajar}\n📖 Materi: ${materi}\n📝 Evaluasi: ${catatan}\n📌 Status: *${status}*\n\n_${penutupDoa}._`;
+                
+                document.getElementById('btn-wa').href = `https://api.whatsapp.com/send?text=${encodeURIComponent(teksWA)}`;
+                document.getElementById('wa-section').classList.remove('hidden');
+                document.getElementById('form-mutabaah').reset();
+            }
+        });
+
+        // --- REKAP SIMBOL WA ---
+        async function loadKelasDropdownRekap() {
+            const { data } = await supabaseClient.from('kelas').select('*');
+            let opt = '<option value="">Pilih Kelas...</option>';
+            data?.forEach(k => { opt += `<option value="${k.id}" data-nama="${k.nama_kelas}" data-program="${k.nama_program}">${k.nama_kelas} (${k.nama_program})</option>`; });
+            document.getElementById('rekap-select-kelas').innerHTML = opt;
+        }
+
+        async function loadMuridForRekap() {
+            const kelasId = document.getElementById('rekap-select-kelas').value;
+            const container = document.getElementById('container-absensi');
+            
+            if(!kelasId) {
+                container.innerHTML = '<p class="text-sm text-gray-500 italic">Silakan pilih kelas terlebih dahulu.</p>';
+                return;
+            }
+
+            const { data: muridList } = await supabaseClient.from('murid').select('*').eq('kelas_id', kelasId);
+
+            if(!muridList || muridList.length === 0) {
+                container.innerHTML = '<p class="text-sm text-red-500">Belum ada murid di kelas ini.</p>';
+                return;
+            }
+
+            let html = '<p class="text-xs font-bold text-gray-700 mb-2">Atur Status Peserta Hari Ini:</p>';
+            muridList.forEach((m, index) => {
+                html += `
+                    <div class="flex items-center justify-between p-2.5 bg-gray-50 border rounded-xl text-sm">
+                        <span class="font-medium text-gray-800">${index + 1}. ${m.nama_murid}</span>
+                        <select data-murid-id="${m.id}" data-nama-murid="${m.nama_murid}" class="status-murid px-3 py-1.5 bg-white border rounded-lg text-sm font-semibold outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="✅">✅ Hadir & Setor</option>
+                            <option value="📖">📖 Hadir, Belum Setor</option>
+                            <option value="🤒">🤒 Sakit</option>
+                            <option value="🧳">🧳 Izin</option>
+                            <option value="❌">❌ Alpha (Tanpa Keterangan)</option>
+                        </select>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function generateRekapWA() {
+            const tgl = document.getElementById('rekap-tanggal').value;
+            const selectKelas = document.getElementById('rekap-select-kelas');
+            
+            if(!selectKelas.value) {
+                alert('Silakan pilih kelas terlebih dahulu.');
+                return;
+            }
+
+            const selectedOption = selectKelas.options[selectKelas.selectedIndex];
+            const namaKelas = selectedOption.getAttribute('data-nama');
+            const namaProgram = selectedOption.getAttribute('data-program');
+            
+            const selects = document.querySelectorAll('.status-murid');
+            if(selects.length === 0) {
+                alert('Tidak ada data murid untuk direkap.');
+                return;
+            }
+
+            let daftarLaporan = '';
+            selects.forEach((sel, i) => {
+                const nama = sel.getAttribute('data-nama-murid');
+                const status = sel.value;
+                daftarLaporan += `${i + 1}. ${nama} ${status}\n`;
+            });
+
+            const isAkhwat = namaKelas.toLowerCase().includes('akhwat') || namaProgram.toLowerCase().includes('akhwat');               const penutupDoa = isAkhwat 
+                ? 'Tetap Istiqomah, semoga Allah mudahkan, barakallah fiikunna' 
+                : 'Tetap Istiqomah, semoga Allah mudahkan, barakallah fiikum';
+
+            const pesanFinal = `*📋 REKAP HARIAN KELAS*\n📁 Kelas: ${namaKelas}\n📚 Program: ${namaProgram}\n📅 Tanggal: ${tgl}\n\n${daftarLaporan}\n*Keterangan Simbol:*\n✅ Hadir & Setor\n📖 Hadir, Belum Setor\n🤒 Sakit\n🧳 Izin\n❌ Alpha (Tanpa Keterangan)\n\n_${penutupDoa}._`;
+
+            document.getElementById('text-rekap-wa').value = pesanFinal;
+            document.getElementById('btn-kirim-rekap-wa').href = `https://api.whatsapp.com/send?text=${encodeURIComponent(pesanFinal)}`;
+            document.getElementById('hasil-rekap-section').classList.remove('hidden');
+        }
+
+        // Load awal jalankan tab mutabaah
+        switchTab('mutabaah');
+    </script>
+</body>
+</html>
