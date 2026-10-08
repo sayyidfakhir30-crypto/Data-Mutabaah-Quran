@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MutabaahQuran - Admin & Pengajar</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-gray-50 font-sans">
+    <div class="max-w-4xl mx-auto p-4 sm:p-6">
+        <header class="bg-emerald-700 text-white p-6 rounded-2xl shadow-md mb-6">
+            <h1 class="text-2xl font-bold">MutabaahQuran Dashboard</h1>
+            <p class="text-emerald-100 text-sm mt-1">Sistem Pengelolaan Data Kelas & Rapor Harian</p>
+        </header>
+
+        <!-- Menu Tab -->
+        <div class="flex gap-2 mb-6 border-b pb-3 overflow-x-auto">
+            <button onclick="switchTab('kelas')" id="btn-kelas" class="px-4 py-2 bg-emerald-700 text-white rounded-lg font-medium text-sm transition shrink-0">1. Kelola Kelas</button>
+            <button onclick="switchTab('pengajar')" id="btn-pengajar" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium text-sm transition shrink-0">2. Kelola Pengajar</button>
+            <button onclick="switchTab('murid')" id="btn-murid" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium text-sm transition shrink-0">3. Kelola Murid</button>
+            <button onclick="switchTab('mutabaah')" id="btn-mutabaah" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium text-sm transition shrink-0">4. Input Rapor</button>
+        </div>
+
+        <!-- TAB 1: KELAS -->
+        <div id="tab-kelas" class="space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border">
+                <h2 class="text-lg font-bold mb-4 text-gray-800">Tambah Kelas Baru</h2>
+                <form id="form-kelas" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Kelas (Contoh: Ikhwah A, Akhwat B)</label>
+                        <input type="text" id="nama_kelas" required class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Program (Contoh: Tahsin, Tahfiz)</label>
+                        <input type="text" id="nama_program" required class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-xl transition">Simpan Kelas</button>
+                </form>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border">
+                <h2 class="text-lg font-bold mb-4 text-gray-800">Daftar Kelas</h2>
+                <div id="list-kelas" class="space-y-2 text-sm text-gray-600">Memuat data...</div>
+            </div>
+        </div>
+
+        <!-- TAB 2: PENGAJAR -->
+        <div id="tab-pengajar" class="space-y-6 hidden">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border">
+                <h2 class="text-lg font-bold mb-4 text-gray-800">Tambah Pengajar Baru</h2>
+                <form id="form-pengajar" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Pengajar</label>
+                        <input type="text" id="nama_pengajar" required class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-xl transition">Simpan Pengajar</button>
+                </form>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border">
+                <h2 class="text-lg font-bold mb-4 text-gray-800">Daftar Pengajar</h2>
+                <div id="list-pengajar" class="space-y-2 text-sm text-gray-600">Memuat data...</div>
+            </div>
+        </div>
+
+        <!-- TAB 3: MURID -->
+        <div id="tab-murid" class="space-y-6 hidden">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border">
+                <h2 class="text-lg font-bold mb-4 text-gray-800">Daftarkan Murid Baru</h2>
+                <form id="form-murid" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Peserta</label>
+                        <input type="text" id="nama_murid" required class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Masuk</label>
+                        <input type="date" id="tanggal_masuk" required class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Pilih Kelas</label>
+                        <select id="select-kelas" required class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
+                            <option value="">Pilih Kelas...</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-xl transition">Simpan Murid</button>
+                </form>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border">
+                <h2 class="text-lg font-bold mb-4 text-gray-800">Daftar Murid</h2>
+                <div id="list-murid" class="space-y-2 text-sm text-gray-600">Memuat data...</div>
+            </div>
+        </div>
+
+        <!-- TAB 4: MUTABAAH -->
+        <div id="tab-mutabaah" class="space-y-6 hidden">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border">
+                <h2 class="text-lg font-bold mb-4 text-gray-800">Input Rapor Harian Pengajar</h2>
+                <form id="form-mutabaah" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Pilih Murid</label>
+                        <select id="select-murid" required class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
+                            <option value="">Pilih Murid...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Pilih Pengajar</label>
+                        <select id="select-pengajar" required class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
+                            <option value="">Pilih Pengajar...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Pertemuan</label>
+                        <input type="date" id="tgl_pertemuan" required class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Materi / Halaman / Surah</label>
+                        <input type="text" id="materi" required class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Catatan Evaluasi / Makhraj / Tajwid</label>
+                        <textarea id="catatan" rows="3" required class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Status Akhir</label>
+                        <select id="status_akhir" required class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
+                            <option value="Lanjut Materi">Lanjut Materi</option>
+                            <option value="Ulangi Materi">Ulangi Materi</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-xl transition">Kirim Rapor</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // KUNCI SUPABASE ANDA YANG SUDAH TERPASANG
+        const SUPABASE_URL = 'https://lzwsermxukdyqdeutwym.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_1wYB5aF2F4Da81s4S3y8sA_i2FEy2rc';
+        
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        function switchTab(tab) {
+            ['kelas', 'pengajar', 'murid', 'mutabaah'].forEach(t => {
+                document.getElementById('tab-' + t).classList.add('hidden');
+                document.getElementById('btn-' + t).className = "px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium text-sm transition shrink-0";
+            });
+            document.getElementById('tab-' + tab).classList.remove('hidden');
+            document.getElementById('btn-' + tab).className = "px-4 py-2 bg-emerald-700 text-white rounded-lg font-medium text-sm transition shrink-0";
+            
+            if(tab === 'kelas') loadKelas();
+            if(tab === 'pengajar') loadPengajar();
+            if(tab === 'murid') { loadKelasDropdown(); loadMurid(); }
+            if(tab === 'mutabaah') { loadMuridDropdown(); loadPengajarDropdown(); }
+        }
+
+        // --- KELAS ---
+        document.getElementById('form-kelas').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const { error } = await supabaseClient.from('kelas').insert([{
+                nama_kelas: document.getElementById('nama_kelas').value,
+                nama_program: document.getElementById('nama_program').value
+            }]);
+            if(error) alert('Gagal: ' + error.message);
+            else { alert('Kelas berhasil disimpan!'); document.getElementById('form-kelas').reset(); loadKelas(); }
+        });
+
+        async function loadKelas() {
+            const { data } = await supabaseClient.from('kelas').select('*').order('created_at', { ascending: false });
+            let html = '';
+            data?.forEach(k => { html += `<div class="p-3 bg-gray-50 rounded-xl border flex justify-between items-center"><span><b>${k.nama_kelas}</b> (${k.nama_program})</span></div>`; });
+            document.getElementById('list-kelas').innerHTML = html || 'Belum ada data kelas.';
+        }
+
+        // --- PENGAJAR ---
+        document.getElementById('form-pengajar').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const { error } = await supabaseClient.from('pengajar').insert([{
+                nama_pengajar: document.getElementById('nama_pengajar').value
+            }]);
+            if(error) alert('Gagal: ' + error.message);
+            else { alert('Pengajar berhasil disimpan!'); document.getElementById('form-pengajar').reset(); loadPengajar(); }
+        });
+
+        async function loadPengajar() {
+            const { data } = await supabaseClient.from('pengajar').select('*').order('created_at', { ascending: false });
+            let html = '';
+            data?.forEach(p => { html += `<div class="p-3 bg-gray-50 rounded-xl border"><span><b>${p.nama_pengajar}</b></span></div>`; });
+            document.getElementById('list-pengajar').innerHTML = html || 'Belum ada data pengajar.';
+        }
+
+        async function loadKelasDropdown() {
+            const { data } = await supabaseClient.from('kelas').select('*');
+            let opt = '<option value="">Pilih Kelas...</option>';
+            data?.forEach(k => { opt += `<option value="${k.id}">${k.nama_kelas} (${k.nama_program})</option>`; });
+            document.getElementById('select-kelas').innerHTML = opt;
+        }
+
+        // --- MURID ---
+        document.getElementById('form-murid').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const { error } = await supabaseClient.from('murid').insert([{
+                nama_murid: document.getElementById('nama_murid').value,
+                tanggal_masuk: document.getElementById('tanggal_masuk').value,
+                kelas_id: document.getElementById('select-kelas').value
+            }]);
+            if(error) alert('Gagal: ' + error.message);
+            else { alert('Murid berhasil disimpan!'); document.getElementById('form-murid').reset(); loadMurid(); }
+        });
+
+        async function loadMurid() {
+            const { data } = await supabaseClient.from('murid').select('*, kelas(nama_kelas)').order('created_at', { ascending: false });
+            let html = '';
+            data?.forEach(m => { html += `<div class="p-3 bg-gray-50 rounded-xl border flex justify-between items-center"><span><b>${m.nama_murid}</b> (Masuk: ${m.tanggal_masuk}) - Kelas: ${m.kelas?.nama_kelas || '-'}</span></div>`; });
+            document.getElementById('list-murid').innerHTML = html || 'Belum ada data murid.';
+        }
+
+        // --- MUTABAAH ---
+        async function loadMuridDropdown() {
+            const { data } = await supabaseClient.from('murid').select('*');
+            let opt = '<option value="">Pilih Murid...</option>';
+            data?.forEach(m => { opt += `<option value="${m.id}">${m.nama_murid}</option>`; });
+            document.getElementById('select-murid').innerHTML = opt;
+        }
+
+        async function loadPengajarDropdown() {
+            const { data } = await supabaseClient.from('pengajar').select('*');
+            let opt = '<option value="">Pilih Pengajar...</option>';
+            data?.forEach(p => { opt += `<option value="${p.id}">${p.nama_pengajar}</option>`; });
+            document.getElementById('select-pengajar').innerHTML = opt;
+        }
+
+        document.getElementById('form-mutabaah').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const { error } = await supabaseClient.from('mutabaah').insert([{
+                murid_id: document.getElementById('select-murid').value,
+                pengajar_id: document.getElementById('select-pengajar').value,
+                tanggal_pertemuan: document.getElementById('tgl_pertemuan').value,
+                materi: document.getElementById('materi').value,
+                catatan_evaluasi: document.getElementById('catatan').value,
+                status_akhir: document.getElementById('status_akhir').value
+            }]);
+            if(error) alert('Gagal: ' + error.message);
+            else { alert('Rapor mutabaah berhasil disimpan!'); document.getElementById('form-mutabaah').reset(); }
+        });
+
+        // Load awal
+        loadKelas();
+    </script>
+</body>
+</html>
