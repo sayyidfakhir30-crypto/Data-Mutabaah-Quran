@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MutabaahQuran - Portal Pengajar</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-gray-50 font-sans">
+    <div class="max-w-4xl mx-auto p-4 sm:p-6">
+        <header class="bg-emerald-700 text-white p-6 rounded-2xl shadow-md mb-6 flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold">Portal Pengajar</h1>
+                <p class="text-emerald-100 text-sm mt-1">Input Rapor & Rekap Grup Harian</p>
+            </div>
+            <a href="index.html" class="bg-emerald-800 hover:bg-emerald-900 text-white text-xs px-3 py-2 rounded-xl transition">Kembali ke Admin</a>
+        </header>
+
+        <!-- Menu Tab Pengajar -->
+        <div class="flex gap-2 mb-6 border-b pb-3 overflow-x-auto">
+            <button onclick="switchTab('mutabaah')" id="btn-mutabaah" class="px-4 py-2 bg-emerald-700 text-white rounded-lg font-medium text-sm transition shrink-0">1. Input Rapor Harian</button>
+            <button onclick="switchTab('rekap')" id="btn-rekap" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium text-sm transition shrink-0">2. Rekap Simbol WA</button>
+        </div>
+
+        <!-- NOTIFIKASI STATUS -->
+        <div id="notif-box" class="hidden mb-6 p-4 rounded-xl text-sm font-medium"></div>
+
+        <!-- TAB 4: MUTABAAH (INPUT RAPOR) -->
+        <div id="tab-mutabaah" class="space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border">
+                <h2 class="text-lg font-bold mb-4 text-gray-800">Input Rapor Harian Pengajar</h2>
+                <form id="form-mutabaah" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Pilih Murid</label>
+                        <select id="select-murid" required class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
+                            <option value="">Pilih Murid...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Pilih Pengajar</label>
+                        <select id="select-pengajar" required class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
+                            <option value="">Pilih Pengajar...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Pertemuan</label>
+                        <input type="date" id="tgl_pertemuan" required class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Materi / Halaman / Surah</label>
+                        <input type="text" id="materi" required class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Catatan Evaluasi / Makhraj / Tajwid</label>
+                        <textarea id="catatan" rows="3" required class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Status Akhir</label>
+                        <select id="status_akhir" required class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
+                            <option value="Lanjut Materi">Lanjut Materi</option>
+                            <option value="Ulangi Materi">Ulangi Materi</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-xl transition">Simpan & Buat Format WhatsApp</button>
+                </form>
+
+                <!-- TOMBOL KIRIM KE WA SETELAH INPUT -->
+                <div id="wa-section" class="hidden mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                    <h3 class="font-bold text-emerald-800 text-sm mb-2">Rapor Berhasil Disimpan!</h3>
+                    <p class="text-xs text-emerald-700 mb-3">Klik tombol di bawah untuk langsung membagikan rekap laporan ini ke WhatsApp:</p>
+                    <a id="btn-wa" href="#" target="_blank" class="block text-center bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-4 rounded-xl transition text-sm">
+                        Kirim ke WhatsApp 📱
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: REKAP SIMBOL WA -->
+        <div id="tab-rekap" class="space-y-6 hidden">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border">
+                <h2 class="text-lg font-bold mb-4 text-gray-800">Buat Rekap Simbol untuk Grup WhatsApp</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Pilih Kelas</label>
+                        <select id="rekap-select-kelas" onchange="loadMuridForRekap()" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
+                            <option value="">Pilih Kelas...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Rekap</label>
+                        <input type="date" id="rekap-tanggal" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    
+                    <div id="container-absensi" class="space-y-3 mt-4">
+                        <p class="text-sm text-gray-500 italic">Silakan pilih kelas terlebih dahulu untuk memuat daftar peserta.</p>
+                    </div>
+
+                    <button onclick="generateRekapWA()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-xl transition mt-4">
+                        Generate Format WhatsApp 📋
+                    </button>
+                </div>
+
+                <!-- HASIL REKAP WA -->
+                <div id="hasil-rekap-section" class="hidden mt-6 p-4 bg-gray-50 border rounded-xl space-y-3">
+                    <h3 class="font-bold text-gray-800 text-sm">Hasil Pesan Rekap (Siap Kirim):</h3>
+                    <textarea id="text-rekap-wa" rows="8" class="w-full p-3 bg-white border rounded-xl text-xs font-mono outline-none"></textarea>
+                    <a id="btn-kirim-rekap-wa" href="#" target="_blank" class="block text-center bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-4 rounded-xl transition text-sm">
+                        Kirim Rekap Ini ke Grup WhatsApp 🚀
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://lzwsermxukdyqdeutwym.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_1wYB5aF2F4Da81s4S3y8sA_i2FEy2rc';
+        
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        function showNotif(pesan, sukses = true) {
+            const box = document.getElementById('notif-box');
+            box.className = `mb-6 p-4 rounded-xl text-sm font-medium ${sukses ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-red-100 text-red-800 border border-red-200'}`;
+            box.innerText = pesan;
+            box.classList.remove('hidden');
+            setTimeout(() => box.classList.add('hidden'), 4000);
+        }
+
+        function switchTab(tab) {
+            ['mutabaah', 'rekap'].forEach(t => {
+                document.getElementById('tab-' + t).classList.add('hidden');
+                document.getElementById('btn-' + t).className = "px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium text-sm transition shrink-0";
+            });
+            document.getElementById('tab-' + tab).classList.remove('hidden');
+            document.getElementById('btn-' + tab).className = "px-4 py-2 bg-emerald-700 text-white rounded-lg font-medium text-sm transition shrink-0";
+            
+            if(tab === 'mutabaah') { loadMuridDropdown(); loadPengajarDropdown(); document.getElementById('wa-section').classList.add('hidden'); }
+            if(tab === 'rekap') { loadKelasDropdownRekap(); document.getElementById('rekap-tanggal').valueAsDate = new Date(); }
+        }
+
+        // --- LOAD DROPDOWN MUTABAAH ---
+        async function loadMuridDropdown() {
+            const { data } = await supabaseClient.from('murid').select('*, kelas(nama_kelas, nama_program)');
+            let opt = '<option value="">Pilih Murid...</option>';
+            data?.forEach(m => { 
+                const namaKls = m.kelas?.nama_kelas || '';
+                const namaProg = m.kelas?.nama_program || '';
+                opt += `<option value="${m.id}" data-namakelas="${namaKls}" data-namaprogram="${namaProg}">${m.nama_murid} (${namaKls} - ${namaProg})</option>`; 
+            });
+            document.getElementById('select-murid').
